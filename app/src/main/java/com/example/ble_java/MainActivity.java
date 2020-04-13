@@ -2,6 +2,7 @@ package com.example.ble_java;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -28,12 +29,14 @@ import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.List;
 
+@TargetApi(28)
 public class MainActivity extends AppCompatActivity {
 
     private BluetoothAdapter mBluetoothAdapter;
     private Handler mHandler;
-    private static final long SCAN_PERIOD = 25000;
+    private static final long SCAN_PERIOD = 10000;
     private BluetoothLeScanner mLEScanner;
+    private boolean mScanning;
     private ScanSettings settings;
     private List<ScanFilter> filters;
     private BluetoothGatt mGatt;
@@ -61,11 +64,11 @@ public class MainActivity extends AppCompatActivity {
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
         }else{
-            if(Build.VERSION.SDK_INT>=21){
+
                 mLEScanner = mBluetoothAdapter.getBluetoothLeScanner();
                 settings = new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build();
                 filters = new ArrayList<ScanFilter>();
-            }
+
             scanLeDevice(true);
         }
     }
@@ -100,28 +103,21 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void scanLeDevice(final boolean enable) {
+        final BluetoothLeScanner bluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
         if (enable) {
             mHandler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    if (Build.VERSION.SDK_INT < 21) {
-                        mBluetoothAdapter.stopLeScan(mLeScanCallback);
-                    } else {
-                        mLEScanner.stopScan(mScanCallback);
-                    }
+                    mScanning = false;
+                    bluetoothLeScanner.stopScan(mScanCallback);
+                    System.out.println("Se detuvo el escaneo");
                 }
             }, SCAN_PERIOD);
-            if (Build.VERSION.SDK_INT < 21) {
-                mBluetoothAdapter.startLeScan(mLeScanCallback);
-            } else {
-                mLEScanner.startScan(filters, settings, mScanCallback);
-            }
+                mScanning = true;
+                bluetoothLeScanner.startScan(filters, settings, mScanCallback);
         } else {
-            if (Build.VERSION.SDK_INT < 21) {
-                mBluetoothAdapter.stopLeScan(mLeScanCallback);
-            } else {
-                mLEScanner.stopScan(mScanCallback);
-            }
+            mScanning=false;
+            bluetoothLeScanner.stopScan(mScanCallback);
         }
     }
 
@@ -131,6 +127,7 @@ public class MainActivity extends AppCompatActivity {
             Log.i("callbackType", String.valueOf(callbackType));
             Log.i("result", result.toString());
             BluetoothDevice btDevice = result.getDevice();
+            System.out.println(btDevice);
         }
 
         @Override
