@@ -26,21 +26,25 @@ import android.os.Handler;
 import android.util.Log;
 import android.widget.Toast;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @TargetApi(28)
 public class MainActivity extends AppCompatActivity {
 
     private BluetoothAdapter mBluetoothAdapter;
     private Handler mHandler;
-    private static final long SCAN_PERIOD = 10000;
+    private static final long SCAN_PERIOD = 25000;
     private BluetoothLeScanner mLEScanner;
     private boolean mScanning;
     private ScanSettings settings;
     private List<ScanFilter> filters;
     private BluetoothGatt mGatt;
     private int REQUEST_ENABLE_BT = 1;
+    private String BLE_DeviceString;
+    private int BLE_DeviceInteger;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,11 +68,9 @@ public class MainActivity extends AppCompatActivity {
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
         }else{
-
-                mLEScanner = mBluetoothAdapter.getBluetoothLeScanner();
-                settings = new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build();
-                filters = new ArrayList<ScanFilter>();
-
+            mLEScanner = mBluetoothAdapter.getBluetoothLeScanner();
+            settings = new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build();
+            filters = new ArrayList<ScanFilter>();
             scanLeDevice(true);
         }
     }
@@ -104,13 +106,14 @@ public class MainActivity extends AppCompatActivity {
 
     private void scanLeDevice(final boolean enable) {
         final BluetoothLeScanner bluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
+        BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
         if (enable) {
             mHandler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
                     mScanning = false;
                     bluetoothLeScanner.stopScan(mScanCallback);
-                    System.out.println("Se detuvo el escaneo");
+                    System.out.println("Finished the BLE scan");
                 }
             }, SCAN_PERIOD);
                 mScanning = true;
@@ -124,10 +127,13 @@ public class MainActivity extends AppCompatActivity {
     private ScanCallback mScanCallback = new ScanCallback() {
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
-            Log.i("callbackType", String.valueOf(callbackType));
-            Log.i("result", result.toString());
             BluetoothDevice btDevice = result.getDevice();
-            System.out.println(btDevice);
+            BLE_DeviceString = result.getScanRecord().getManufacturerSpecificData().toString().substring(1,3);
+            BLE_DeviceInteger = Integer.parseInt(BLE_DeviceString);
+            if (BLE_DeviceInteger == 89){
+                //System.out.println("Todo cool");
+                System.out.println("Se activo el dispositivo: "+btDevice);
+            }
         }
 
         @Override
